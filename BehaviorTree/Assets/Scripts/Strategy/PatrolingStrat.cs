@@ -24,7 +24,7 @@ public class PatrolingStrat : IStrategy
 
     public PacoNode.Status Process()
     {
-        if (CurrentIndex > Points.Count)
+        if (CurrentIndex == Points.Count)
         {
             Reset();
         }

@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Events;
 
 /// <summary>
 /// This class is the Antagonistic enemy, 
@@ -23,11 +24,14 @@ public class RedGuy : MonoBehaviour
     [Header("Behavior logic")]
     [SerializeField] private TMP_Text behaviorText;
     public string stateName = "null";
+    [SerializeField] private float chaseSpeed = 4;
 
     private BehaviorTree tree;
 
     [SerializeField] private float minDist = 3;
     private bool SeesPlayer = false;
+
+    [SerializeField] private UnityEvent OnHitPlayer;
 
     private void Awake()
     {
@@ -35,14 +39,15 @@ public class RedGuy : MonoBehaviour
 
         ActionNode Patrol = new ActionNode("Patrol", new PatrolingStrat(transform, agent, movePoints, walkSpeed));
 
-
         //See & Chase player Logic
-        ActionNode SeePlayer = new ActionNode("SeePlayer", new ConditionStrat(() => SeesPlayer));
-        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer", new ActionStrat(() => agent.SetDestination(playerObj.transform.position)));
+        ActionNode SeePlayer    = new ActionNode("SeePlayer", new ConditionStrat(() => SeesPlayer));
+        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer", new ChaseTarget(agent, playerObj.transform, chaseSpeed));
+        ActionNode HitTarget    = new ActionNode("HitPlayer", new ActionStrat(() => OnHitPlayer?.Invoke()));
 
         SequenceNode ChasePlayer = new SequenceNode("ChasePlayer", 1);
         ChasePlayer.AddChild(SeePlayer);
         ChasePlayer.AddChild(MoveToPlayer);
+        ChasePlayer.AddChild(HitTarget);
 
         PriorityNode redGuyDefault = new PriorityNode("RedGuyDefault");
         redGuyDefault.AddChild(Patrol);

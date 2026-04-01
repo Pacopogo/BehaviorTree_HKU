@@ -30,7 +30,7 @@ public class RedGuy : MonoBehaviour
     private BehaviorTree tree;
 
     [SerializeField] private GameObject ClosestWeapon;
-    private bool HasWeapon = false;
+    [SerializeField] private bool HasWeapon = false;
 
     [Header("Chase logic")]
     [SerializeField] private float minDist = 3;
@@ -49,6 +49,7 @@ public class RedGuy : MonoBehaviour
             dummySee = value;
         }
     }
+    private bool IsAlerted;
 
     [SerializeField] private UnityEvent OnHitPlayer;
 
@@ -61,14 +62,16 @@ public class RedGuy : MonoBehaviour
         PriorityNode redGuyDefault = new PriorityNode("RedGuyDefault");
 
         //Patrolling
-        ActionNode Patrol = new ActionNode("Patrol", new PatrolingStrat(transform, agent, movePoints, walkSpeed));
+        ActionNode Patrol = new ActionNode("Patrol",            new PatrolingStrat(transform, agent, movePoints, walkSpeed));
         ActionNode DisplayPatrolUI = new ActionNode("PatrolUI", new RepeaterStrat(() => behaviorText.text = "Patroling"));
 
         //Chase logic
-        ActionNode SeePlayer = new ActionNode("SeePlayer", new ConditionStrat(() => SeesPlayer));
-        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer", new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0));
-        ActionNode HitTarget = new ActionNode("HitPlayer", new ActionStrat(() => OnHitPlayer?.Invoke()));
-        ActionNode DisplayChaseUI = new ActionNode("ChaseUI", new ActionStrat(() => behaviorText.text = "Chasing"));
+        ActionNode Alerted = new ActionNode("Alert",                new ConditionStrat(() => IsAlerted || HasWeapon && SeesPlayer));
+        ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",    new ChaseTarget(agent, ClosestWeapon.transform, chaseSpeed, 0.05f));
+        ActionNode SeePlayer = new ActionNode("SeePlayer",          new ConditionStrat(() => SeesPlayer));
+        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer",    new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0.05f));
+        ActionNode HitTarget = new ActionNode("HitPlayer",          new ActionStrat(() => OnHitPlayer?.Invoke()));
+        ActionNode DisplayChaseUI = new ActionNode("ChaseUI",       new ActionStrat(() => behaviorText.text = "Chasing"));
 
         //bunching the patrol actions parralel from each other to display the parralel node 
         ParralelNode parralel = new ParralelNode("Patrolling");
@@ -77,6 +80,8 @@ public class RedGuy : MonoBehaviour
 
         //The chase sequence
         ChasePlayer = new SequenceNode("ChasePlayer", 1);
+        ChasePlayer.AddChild(Alerted);
+        ChasePlayer.AddChild(MoveToWeapon);
         ChasePlayer.AddChild(SeePlayer);
         ChasePlayer.AddChild(DisplayChaseUI);
         ChasePlayer.AddChild(MoveToPlayer);
@@ -130,11 +135,13 @@ public class RedGuy : MonoBehaviour
                 {
                     SeesPlayer = hit.collider.gameObject.GetComponent<MoveAgent>() != null ? true : false;
 
-                    Color rayColor = SeesPlayer ? Color.red : Color.green;
 
+                    Color rayColor = SeesPlayer ? Color.red : Color.green;
                     Debug.DrawRay(transform.position, dir, rayColor);
+
+                    if(SeesPlayer)
+                        IsAlerted = true;
                 }
-                Debug.Log(SeesPlayer);
             }
         }
     }

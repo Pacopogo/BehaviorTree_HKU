@@ -18,14 +18,19 @@ public class ChaseTarget : IStrategy
 
     public PacoNode.Status Process()
     {
+        if(!target.gameObject.activeSelf)
+            return PacoNode.Status.Success;
+
         agent.speed = chaseSpeed;
         agent.SetDestination(target.position);
 
-        if (agent.remainingDistance < minimalDistance)
+        float dist = Vector3.Distance(agent.transform.position, target.position);
+
+        Debug.Log(dist + "||" + minimalDistance);
+        if (dist <= minimalDistance)
         {
             return PacoNode.Status.Success;
         }
-
 
         return PacoNode.Status.Running;
     }

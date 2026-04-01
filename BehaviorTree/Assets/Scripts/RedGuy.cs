@@ -67,11 +67,12 @@ public class RedGuy : MonoBehaviour
 
         //Chase logic
         ActionNode Alerted = new ActionNode("Alert",                new ConditionStrat(() => IsAlerted && !HasWeapon || HasWeapon && SeesPlayer));
+        ActionNode TextSearch = new ActionNode("ChaseUI",           new ActionStrat(() => behaviorText.text = "Search"));
         ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",    new ChaseTarget(agent, ClosestWeapon.transform, chaseSpeed, 0.05f));
         ActionNode SeePlayer = new ActionNode("SeePlayer",          new ConditionStrat(() => SeesPlayer));
+        ActionNode TextChase = new ActionNode("ChaseUI",            new ActionStrat(() => behaviorText.text = "Chasing"));
         ActionNode MoveToPlayer = new ActionNode("MoveToPlayer",    new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0.05f));
         ActionNode HitTarget = new ActionNode("HitPlayer",          new ActionStrat(() => OnHitPlayer?.Invoke()));
-        ActionNode DisplayChaseUI = new ActionNode("ChaseUI",       new ActionStrat(() => behaviorText.text = "Chasing"));
 
         //bunching the patrol actions parralel from each other to display the parralel node 
         ParralelNode parralel = new ParralelNode("Patrolling");
@@ -83,7 +84,7 @@ public class RedGuy : MonoBehaviour
         ChasePlayer.AddChild(Alerted);
         ChasePlayer.AddChild(MoveToWeapon);
         ChasePlayer.AddChild(SeePlayer);
-        ChasePlayer.AddChild(DisplayChaseUI);
+        ChasePlayer.AddChild(TextChase);
         ChasePlayer.AddChild(MoveToPlayer);
         ChasePlayer.AddChild(HitTarget);
 

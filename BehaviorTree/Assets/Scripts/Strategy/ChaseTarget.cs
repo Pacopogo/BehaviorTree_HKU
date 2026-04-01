@@ -6,13 +6,14 @@ public class ChaseTarget : IStrategy
     private NavMeshAgent agent;
     private Transform target;
     private float chaseSpeed;
-    private bool isCalculating;
+    private float minimalDistance;
 
-    public ChaseTarget(NavMeshAgent agent, Transform target, float chaseSpeed = 1)
+    public ChaseTarget(NavMeshAgent agent, Transform target, float chaseSpeed = 1, float minimalDistance = 0.1f)
     {
-        this.agent = agent;
-        this.target = target;
-        this.chaseSpeed = chaseSpeed;
+        this.agent              = agent;
+        this.target             = target;
+        this.chaseSpeed         = chaseSpeed;
+        this.minimalDistance    = minimalDistance;
     }
 
     public PacoNode.Status Process()
@@ -20,10 +21,11 @@ public class ChaseTarget : IStrategy
         agent.speed = chaseSpeed;
         agent.SetDestination(target.position);
 
-        if (agent.remainingDistance < 0.1)
+        if (agent.remainingDistance < minimalDistance)
         {
             return PacoNode.Status.Success;
         }
+
 
         return PacoNode.Status.Running;
     }

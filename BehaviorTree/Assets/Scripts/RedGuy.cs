@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using TMPro;
 using UnityEngine;
@@ -28,29 +29,61 @@ public class RedGuy : MonoBehaviour
 
     private BehaviorTree tree;
 
+    [SerializeField] private GameObject ClosestWeapon;
+    private bool HasWeapon = false;
+
+    [Header("Chase logic")]
     [SerializeField] private float minDist = 3;
-    private bool SeesPlayer = false;
+    private bool dummySee;
+    private bool SeesPlayer
+    {
+        get
+        {
+            if (!dummySee)
+                ChasePlayer.Reset();
+
+            return dummySee;
+        }
+        set
+        {
+            dummySee = value;
+        }
+    }
 
     [SerializeField] private UnityEvent OnHitPlayer;
+
+
+    private SequenceNode ChasePlayer;
 
     private void Awake()
     {
         tree = new BehaviorTree("Red Guy");
+        PriorityNode redGuyDefault = new PriorityNode("RedGuyDefault");
 
+        //Patrolling
         ActionNode Patrol = new ActionNode("Patrol", new PatrolingStrat(transform, agent, movePoints, walkSpeed));
+        ActionNode DisplayPatrolUI = new ActionNode("PatrolUI", new RepeaterStrat(() => behaviorText.text = "Patroling"));
 
-        //See & Chase player Logic
-        ActionNode SeePlayer    = new ActionNode("SeePlayer", new ConditionStrat(() => SeesPlayer));
-        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer", new ChaseTarget(agent, playerObj.transform, chaseSpeed));
-        ActionNode HitTarget    = new ActionNode("HitPlayer", new ActionStrat(() => OnHitPlayer?.Invoke()));
+        //Chase logic
+        ActionNode SeePlayer = new ActionNode("SeePlayer", new ConditionStrat(() => SeesPlayer));
+        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer", new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0));
+        ActionNode HitTarget = new ActionNode("HitPlayer", new ActionStrat(() => OnHitPlayer?.Invoke()));
+        ActionNode DisplayChaseUI = new ActionNode("ChaseUI", new ActionStrat(() => behaviorText.text = "Chasing"));
 
-        SequenceNode ChasePlayer = new SequenceNode("ChasePlayer", 1);
+        //bunching the patrol actions parralel from each other to display the parralel node 
+        ParralelNode parralel = new ParralelNode("Patrolling");
+        parralel.AddChild(Patrol);
+        parralel.AddChild(DisplayPatrolUI);
+
+        //The chase sequence
+        ChasePlayer = new SequenceNode("ChasePlayer", 1);
         ChasePlayer.AddChild(SeePlayer);
+        ChasePlayer.AddChild(DisplayChaseUI);
         ChasePlayer.AddChild(MoveToPlayer);
         ChasePlayer.AddChild(HitTarget);
 
-        PriorityNode redGuyDefault = new PriorityNode("RedGuyDefault");
-        redGuyDefault.AddChild(Patrol);
+        //adding to the priority list
+        redGuyDefault.AddChild(parralel);
         redGuyDefault.AddChild(ChasePlayer);
 
         tree.AddChild(redGuyDefault);
@@ -58,27 +91,58 @@ public class RedGuy : MonoBehaviour
 
     private void Update()
     {
-        if (tree.currentChild < tree.Childs.Count)
+        CheckSphereAgent();
+
+        if (!playerObj.activeSelf)
         {
-
-            behaviorText.text =
-                tree.currentNode.NodeName
-                + "\n" +
-                tree.childNode.NodeName;
+            SeesPlayer = false;
+            return;
         }
-
-        LookForPlayer();
 
         tree.Process();
     }
 
-    private void LookForPlayer()
-    {
-        float dist = Vector3.Distance(transform.position, playerObj.transform.position);
 
-        SeesPlayer = dist < minDist ? true : false;
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.GetComponent<WeaponTag>())
+        {
+            HasWeapon = true;
+            other.gameObject.SetActive(false);
+        }
     }
 
+    private void CheckSphereAgent()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, minDist);
+        foreach (Collider collider in colliders)
+        {
+            if (collider.gameObject.GetComponent<WeaponTag>())
+            {
+                ClosestWeapon = collider.gameObject;
+            }
+
+            if (collider.gameObject.GetComponent<MoveAgent>())
+            {
+                RaycastHit hit;
+                Vector3 dir = collider.gameObject.transform.position - transform.position;
+                if (Physics.Raycast(transform.position, dir, out hit, 5))
+                {
+                    
+                    SeesPlayer = hit.collider.gameObject.GetComponent<MoveAgent>() != null ? true : false;
+                    if (SeesPlayer)
+                    {
+                        Debug.DrawRay(transform.position, dir, Color.red);
+                    }
+                    else
+                    {
+                        Debug.DrawRay(transform.position, dir, Color.yellow);
+                    }
+                }
+                Debug.Log(SeesPlayer);
+            }
+        }
+    }
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;

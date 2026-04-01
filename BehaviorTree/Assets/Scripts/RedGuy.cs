@@ -126,18 +126,13 @@ public class RedGuy : MonoBehaviour
             {
                 RaycastHit hit;
                 Vector3 dir = collider.gameObject.transform.position - transform.position;
-                if (Physics.Raycast(transform.position, dir, out hit, 5))
+                if (Physics.Raycast(transform.position, dir, out hit, Mathf.Infinity))
                 {
-                    
                     SeesPlayer = hit.collider.gameObject.GetComponent<MoveAgent>() != null ? true : false;
-                    if (SeesPlayer)
-                    {
-                        Debug.DrawRay(transform.position, dir, Color.red);
-                    }
-                    else
-                    {
-                        Debug.DrawRay(transform.position, dir, Color.yellow);
-                    }
+
+                    Color rayColor = SeesPlayer ? Color.red : Color.green;
+
+                    Debug.DrawRay(transform.position, dir, rayColor);
                 }
                 Debug.Log(SeesPlayer);
             }

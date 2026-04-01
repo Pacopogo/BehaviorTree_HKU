@@ -66,7 +66,7 @@ public class RedGuy : MonoBehaviour
         ActionNode DisplayPatrolUI  = new ActionNode("PatrolUI", new RepeaterStrat(() => behaviorText.text = "Patroling"));
 
         //Chase logic
-        ActionNode Alerted = new ActionNode("Alert",                new ConditionStrat(() => IsAlerted && !HasWeapon || HasWeapon && SeesPlayer));
+        ActionNode Alerted = new ActionNode("Alert",                new ConditionStrat(() => IsAlerted || HasWeapon && SeesPlayer));
         ActionNode TextSearch = new ActionNode("ChaseUI",           new ActionStrat(() => behaviorText.text = "Search"));
         ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",    new ChaseTarget(agent, ClosestWeapon.transform, walkSpeed, 0.05f));
         ActionNode SeePlayer = new ActionNode("SeePlayer",          new ConditionStrat(() => SeesPlayer));

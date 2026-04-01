@@ -24,6 +24,7 @@ public class RedGuy : MonoBehaviour
 
     [Header("Behavior logic")]
     [SerializeField] private TMP_Text behaviorText;
+    [SerializeField] private GameObject weaponTextObj;
     public string stateName = "null";
     [SerializeField] private float chaseSpeed = 4;
 
@@ -98,6 +99,8 @@ public class RedGuy : MonoBehaviour
     private void Update()
     {
         CheckSphereAgent();
+
+        weaponTextObj.SetActive(HasWeapon);
 
         if (!playerObj.activeSelf)
         {

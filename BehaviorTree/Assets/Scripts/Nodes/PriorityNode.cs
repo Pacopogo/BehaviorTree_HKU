@@ -10,7 +10,7 @@ public class PriorityNode : PacoNode
     private List<PacoNode> SortedChilds => sortedChilds ??= SortChildren();
     protected virtual List<PacoNode> SortChildren() => Childs.OrderByDescending(child => child.priority).ToList();
 
-    public PriorityNode(string name) : base(name) { }
+    public PriorityNode(string name, int priority = 0) : base(name, priority) { }
 
     public override void Reset()
     {

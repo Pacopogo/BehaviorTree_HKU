@@ -70,20 +70,26 @@ public class RedGuy : MonoBehaviour
         ActionNode DisplayPatrolUI  = new ActionNode("PatrolUI", new RepeaterStrat(() => behaviorText.text = "Patroling"));
 
         //Find weapon/Alert Logic
-        ActionNode Alerted = new ActionNode("Alert",                new ConditionStrat(() => IsAlerted && !HasWeapon));
-        ActionNode TextSearch = new ActionNode("ChaseUI",           new ActionStrat(() => behaviorText.text = "Alert:\nLook for weapon"));
-        ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",    new ChaseTarget(agent, ClosestWeapon.transform, walkSpeed, 0.05f));
-        ActionNode LastLocationUI = new ActionNode("LastLocationUI", new ActionStrat(() => behaviorText.text = "Search Last known location"));
+        ActionNode Alerted = new ActionNode("Alert",                    new ConditionStrat(() => IsAlerted && !HasWeapon));
+        ActionNode TextSearch = new ActionNode("ChaseUI",               new ActionStrat(() => behaviorText.text = "Alert:\nLook for weapon"));
+        ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",        new ChaseTarget(agent, ClosestWeapon.transform, walkSpeed, 0.05f));
         
+        ActionNode SeePlayer    = new ActionNode("SeePlayer",           new ConditionStrat(() => SeesPlayer));
+        ActionNode TextChase    = new ActionNode("ChaseUI",             new ActionStrat(() => behaviorText.text = "Chase"));
+        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer",        new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0.05f));
+        ActionNode HitTarget    = new ActionNode("HitPlayer",           new ActionStrat(() => OnHitPlayer?.Invoke()));
 
-        ActionNode SeePlayer    = new ActionNode("SeePlayer",          new ConditionStrat(() => SeesPlayer));
-        ActionNode TextChase    = new ActionNode("ChaseUI",            new ActionStrat(() => behaviorText.text = "Chase"));
-        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer",    new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0.05f));
-        ActionNode HitTarget    = new ActionNode("HitPlayer",          new ActionStrat(() => OnHitPlayer?.Invoke()));
-
+        ActionNode AlertTrackChase = new ActionNode("AlertTrackChase",  new ConditionStrat(() => IsAlerted || SeesPlayer));
 
         //Moves the agent to the last know location given
-        ActionNode MoveToLastLocation = new ActionNode("MoveToLastLocation", new ChaseTarget(agent, lastKnownTrans, walkSpeed, 0.05f));
+        ActionNode LastLocationUI = new ActionNode("LastLocationUI",    new ActionStrat(() => behaviorText.text = "Searching"));
+        ActionNode MoveToLastLocation = new ActionNode("MoveToLastLocation", new ChaseTarget(agent, lastKnownTrans, walkSpeed, 0.1f));
+        ActionNode UnAlert = new ActionNode("UnAlert", new ActionStrat(() => IsAlerted = false));
+
+        SequenceNode SearchForTarget = new SequenceNode("Look for player");
+        SearchForTarget.AddChild(LastLocationUI);
+        SearchForTarget.AddChild(MoveToLastLocation);
+        SearchForTarget.AddChild(UnAlert);
 
         //bunching the patrol actions parralel from each other to display the parralel node 
         ParralelNode parralel = new ParralelNode("Patrolling");
@@ -98,9 +104,8 @@ public class RedGuy : MonoBehaviour
         ChasePlayer.AddChild(HitTarget);
 
         SequenceNode TrackPlayer = new SequenceNode("Track Player");
-        //TrackPlayer.AddChild(SeePlayer);
-        TrackPlayer.AddChild(LastLocationUI);
-        TrackPlayer.AddChild(MoveToLastLocation);
+        TrackPlayer.AddChild(SeePlayer);
+        TrackPlayer.AddChild(SearchForTarget);
 
         //Chase logic
         PriorityNode ChaseOrTrack = new PriorityNode("Chase Or Track");
@@ -111,16 +116,19 @@ public class RedGuy : MonoBehaviour
         AlertSequence.AddChild(Alerted);
         AlertSequence.AddChild(TextSearch);
         AlertSequence.AddChild(MoveToWeapon);
-        AlertSequence.AddChild(LastLocationUI);
-        AlertSequence.AddChild(MoveToLastLocation);
+        AlertSequence.AddChild(SearchForTarget);
 
-        PriorityNode AlertAndChase = new PriorityNode("AlertAndChase", 1); //priority 1 to be higher the patroling
+        PriorityNode AlertAndChase = new PriorityNode("AlertAndChase"); //priority 1 to be higher the patroling
         AlertAndChase.AddChild(ChaseOrTrack);
         AlertAndChase.AddChild(AlertSequence);
 
+        SequenceNode AlertOrChaseSequence = new SequenceNode("AlertOrChaseSequence", 1);
+        AlertOrChaseSequence.AddChild(AlertTrackChase);
+        AlertOrChaseSequence.AddChild(AlertAndChase);
+
 
         //adding to the priority list
-        redGuyDefault.AddChild(AlertAndChase);
+        redGuyDefault.AddChild(AlertOrChaseSequence);
         redGuyDefault.AddChild(parralel);
 
         tree.AddChild(redGuyDefault);

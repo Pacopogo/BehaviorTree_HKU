@@ -11,7 +11,7 @@ public class SelectorNode : PacoNode
             switch (Childs[currentChild].Process())
             {
                 case Status.Success:
-                    Reset();
+                    //Reset();
                     return Status.Success;
 
                 case Status.Running:

@@ -246,7 +246,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 208518712}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: root
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -291,7 +291,7 @@ GameObject:
   - component: {fileID: 230352476}
   - component: {fileID: 230352477}
   - component: {fileID: 230352478}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Enemy(RedGuy)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -975,7 +975,7 @@ GameObject:
   - component: {fileID: 422137764}
   - component: {fileID: 422137766}
   - component: {fileID: 422137765}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: head
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1510,7 +1510,7 @@ GameObject:
   - component: {fileID: 500678449}
   - component: {fileID: 500678451}
   - component: {fileID: 500678450}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: torso
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1921,7 +1921,7 @@ GameObject:
   - component: {fileID: 585206434}
   - component: {fileID: 585206436}
   - component: {fileID: 585206435}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: arm-right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2829,6 +2829,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 7
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 658697a436d5f9249b21dbb0fcda43a5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3144,7 +3148,7 @@ GameObject:
   - component: {fileID: 1199929793}
   - component: {fileID: 1199929795}
   - component: {fileID: 1199929794}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: arm-left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3553,7 +3557,7 @@ GameObject:
   - component: {fileID: 1313914751}
   - component: {fileID: 1313914753}
   - component: {fileID: 1313914752}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: leg-right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4114,7 +4118,7 @@ GameObject:
   - component: {fileID: 1623888024}
   - component: {fileID: 1623888026}
   - component: {fileID: 1623888025}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: leg-left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4735,6 +4739,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 658697a436d5f9249b21dbb0fcda43a5, type: 3}
       propertyPath: m_Layer
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 658697a436d5f9249b21dbb0fcda43a5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

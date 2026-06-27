@@ -1,3 +1,6 @@
+using UnityEngine;
+using System;
+using System.Diagnostics;
 
 public class BehaviorTree : PacoNode
 {
@@ -11,8 +14,10 @@ public class BehaviorTree : PacoNode
     {
         Childs[currentChild].Process();
 
+
         currentNode = Childs[currentChild];
-        childNode = currentNode.Childs[currentNode.currentChild];
+        if(currentNode.currentChild < currentNode.Childs.Count)
+            childNode = currentNode.Childs[currentNode.currentChild];
 
         int nextChild = currentChild + 1;
 
@@ -24,6 +29,7 @@ public class BehaviorTree : PacoNode
 
     public override void Reset()
     {
+        UnityEngine.Debug.Log("Tree Reset");
         currentChild = 0;
         base.Reset();
     }

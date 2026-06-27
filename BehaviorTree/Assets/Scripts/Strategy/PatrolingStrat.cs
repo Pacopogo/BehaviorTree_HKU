@@ -12,8 +12,6 @@ public class PatrolingStrat : IStrategy
 
     readonly float MoveSpeed;
 
-    private bool isCalculating;
-
     public PatrolingStrat(Transform body, NavMeshAgent agent, List<Transform> points, float moveSpeed = 4f)
     {
         Body = body;
@@ -26,28 +24,29 @@ public class PatrolingStrat : IStrategy
     {
         if (CurrentIndex == Points.Count)
         {
-            Reset();
+            CurrentIndex = 0;
+            
         }
 
         Transform target = Points[CurrentIndex];
+        
 
-        Agent.SetDestination(target.position);
-        Agent.speed = MoveSpeed;
-
-        if (isCalculating && Agent.remainingDistance < 0.1)
+        if (!Agent.pathPending && Agent.remainingDistance < 0.1)
         {
+
+            Agent.isStopped = false;
+            Agent.speed = MoveSpeed;
+            Agent.SetDestination(target.position);
+
             ++CurrentIndex;
-            isCalculating = false;
         }
 
-        if (Agent.pathPending)
-        {
-            isCalculating = true;
-        }
-
-        return PacoNode.Status.Running;
+        return PacoNode.Status.Success;
     }
 
-    public void Reset() => CurrentIndex = 0;
+    public void Reset()
+    {
+
+    }
 
 }

@@ -27,120 +27,104 @@ public class RedGuy : MonoBehaviour
     [Header("Behavior logic")]
     [SerializeField] private TMP_Text behaviorText;
     [SerializeField] private GameObject weaponTextObj;
+    [SerializeField] private GameObject weaponObj;
     public string stateName = "null";
     [SerializeField] private float chaseSpeed = 4;
 
     private BehaviorTree tree;
 
     [SerializeField] private GameObject ClosestWeapon;
-    [SerializeField] private bool HasWeapon = false;
+    [SerializeField] private bool hasWeapon = false;
 
     [Header("Chase logic")]
     [SerializeField] private float minDist = 3;
     private bool dummySee;
-    private bool SeesPlayer
-    {
-        get
-        {
-            if (!dummySee)
-                ChasePlayer.Reset();
+    [SerializeField] private bool SeesPlayer;
+    [SerializeField] private bool IsAlerted;
 
-            return dummySee;
-        }
-        set
-        {
-            dummySee = value;
-        }
-    }
-    private bool IsAlerted;
+    [SerializeField] private UnityEvent OnAttack;
 
-    [SerializeField] private UnityEvent OnHitPlayer;
-
-
-    private SequenceNode ChasePlayer;
 
     private void Awake()
     {
         
         tree = new BehaviorTree("Red Guy");
-        PriorityNode redGuyDefault = new PriorityNode("RedGuyDefault");
+        UnsafeSequenceNode Base = new UnsafeSequenceNode("Base");
 
         //Patrolling
-        ActionNode Patrol           = new ActionNode("Patrol", new PatrolingStrat(transform, agent, movePoints, walkSpeed));
-        ActionNode DisplayPatrolUI  = new ActionNode("PatrolUI", new RepeaterStrat(() => behaviorText.text = "Patroling"));
+        ActionNode DisplayPatrolUI  = new ActionNode("DisplayPatrolUI", new ActionStrat(() => behaviorText.text = "Patroling"));
+        ActionNode Patrol           = new ActionNode("Patrol",          new PatrolingStrat(transform, agent, movePoints, walkSpeed));
 
         //Find weapon/Alert Logic
-        ActionNode Alerted = new ActionNode("Alert",                    new ConditionStrat(() => IsAlerted && !HasWeapon));
+        ActionNode NoWeapon_Con = new ActionNode("NoWeapon",new ConditionStrat(() => !hasWeapon));
+        ActionNode HasWeapon_Con = new ActionNode("HasWeapon",          new ConditionStrat(() => hasWeapon), 10);
         ActionNode TextSearch = new ActionNode("ChaseUI",               new ActionStrat(() => behaviorText.text = "Alert:\nLook for weapon"));
-        ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",        new ChaseTarget(agent, ClosestWeapon.transform, walkSpeed, 0.05f));
-        
-        ActionNode SeePlayer    = new ActionNode("SeePlayer",           new ConditionStrat(() => SeesPlayer));
-        ActionNode TextChase    = new ActionNode("ChaseUI",             new ActionStrat(() => behaviorText.text = "Chase"));
-        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer",        new ChaseTarget(agent, playerObj.transform, chaseSpeed, 0.05f));
-        ActionNode HitTarget    = new ActionNode("HitPlayer",           new ActionStrat(() => OnHitPlayer?.Invoke()));
+        ActionNode MoveToWeapon = new ActionNode("MoveToWeapon",        new ChaseTarget(agent,() => ClosestWeapon.transform, walkSpeed, 0.05f));
 
-        ActionNode AlertTrackChase = new ActionNode("AlertTrackChase",  new ConditionStrat(() => IsAlerted || SeesPlayer));
+        ActionNode SeePlayer_Con = new ActionNode("SeePlayer", new ConditionStrat(() => { return SeesPlayer; }));
+        ActionNode NoSeePlayer_Con = new ActionNode("NoSeePlayer", new ConditionStrat(() => { return !SeesPlayer; }));
+
+        ActionNode Alerted_Con = new ActionNode("Alerted",              new ConditionStrat(() => IsAlerted));
+        ActionNode NoAlerted_Con = new ActionNode("NoAlerted_Con", new ConditionStrat(() => !IsAlerted));
+
+        ActionNode TextChase    = new ActionNode("ChaseUI",             new ActionStrat(() => behaviorText.text = "Chase"));
+        ActionNode MoveToPlayer = new ActionNode("MoveToPlayer",        new ChaseTarget(agent, () => playerObj.transform, chaseSpeed, 0.5f,() => !SeesPlayer));
+
+        ActionNode TextAttack = new ActionNode("ChaseUI",               new ActionStrat(() => behaviorText.text = "Attack"));
+        ActionNode AttackPlayer    = new ActionNode("AttackPlayer",     new ActionStrat(() => OnAttack?.Invoke()));
+
+        ActionNode AlertTrackChase_Con = new ActionNode("AlertTrackChase",  new ConditionStrat(() => IsAlerted || SeesPlayer), 1);
 
         //Moves the agent to the last know location given
-        ActionNode LastLocationUI = new ActionNode("LastLocationUI",    new ActionStrat(() => behaviorText.text = "Searching"));
-        ActionNode MoveToLastLocation = new ActionNode("MoveToLastLocation", new ChaseTarget(agent, lastKnownTrans, walkSpeed, 0.1f));
-        ActionNode UnAlert = new ActionNode("UnAlert", new ActionStrat(() => IsAlerted = false));
+        ActionNode LastLocationUI = new ActionNode("LastLocationUI",            new ActionStrat(() => behaviorText.text = "Searching"));
+        ActionNode MoveToLastLocation = new ActionNode("MoveToLastLocation",    new ChaseTarget(agent, () => lastKnownTrans, walkSpeed, 0.1f,() => !IsAlerted));
+        ActionNode UnAlert = new ActionNode("UnAlert",                          new ActionStrat(() => IsAlerted = false));
 
-        SequenceNode SearchForTarget = new SequenceNode("Look for player");
-        SearchForTarget.AddChild(LastLocationUI);
-        SearchForTarget.AddChild(MoveToLastLocation);
-        SearchForTarget.AddChild(UnAlert);
+     
+        SequenceNode Patrolling = new SequenceNode("Patrolling", 0);
+        Patrolling.AddChild(NoAlerted_Con);
+        Patrolling.AddChild(NoSeePlayer_Con);
+        Patrolling.AddChild(DisplayPatrolUI);
+        Patrolling.AddChild(Patrol);
 
-        //bunching the patrol actions parralel from each other to display the parralel node 
-        ParralelNode parralel = new ParralelNode("Patrolling");
-        parralel.AddChild(Patrol);
-        parralel.AddChild(DisplayPatrolUI);
+        SequenceNode MoveToLast = new SequenceNode("MoveToLast", 1);
+        MoveToLast.AddChild(HasWeapon_Con);
+        MoveToLast.AddChild(NoSeePlayer_Con);
+        MoveToLast.AddChild(LastLocationUI);
+        MoveToLast.AddChild(MoveToLastLocation);
+        MoveToLast.AddChild(UnAlert);
 
+        SequenceNode LookForWeapon = new SequenceNode("LookForWeapon", 2);
+        LookForWeapon.AddChild(NoWeapon_Con);
+        LookForWeapon.AddChild(TextSearch);
+        LookForWeapon.AddChild(MoveToWeapon);
 
-        ChasePlayer = new SequenceNode("Chase Sequence",1);
-        ChasePlayer.AddChild(SeePlayer);
+        SequenceNode ChasePlayer = new SequenceNode("ChasePlayer", 0);
+        ChasePlayer.AddChild(SeePlayer_Con);
         ChasePlayer.AddChild(TextChase);
         ChasePlayer.AddChild(MoveToPlayer);
-        ChasePlayer.AddChild(HitTarget);
+        ChasePlayer.AddChild(TextAttack);
+        ChasePlayer.AddChild(AttackPlayer);
 
-        SequenceNode TrackPlayer = new SequenceNode("Track Player");
-        TrackPlayer.AddChild(SeePlayer);
-        TrackPlayer.AddChild(SearchForTarget);
+        UnsafeSequenceNode HuntPlayer = new UnsafeSequenceNode("HuntPlayer");
+        HuntPlayer.AddChild(LookForWeapon);
+        HuntPlayer.AddChild(MoveToLast);
+        HuntPlayer.AddChild(ChasePlayer);
 
-        //Chase logic
-        PriorityNode ChaseOrTrack = new PriorityNode("Chase Or Track");
-        ChaseOrTrack.AddChild(ChasePlayer);
-        ChaseOrTrack.AddChild(TrackPlayer);
+        SequenceNode LookForPlayer = new SequenceNode("LookForPlayer", 1);
+        LookForPlayer.AddChild(Alerted_Con);
+        LookForPlayer.AddChild(HuntPlayer);
 
-        SequenceNode AlertSequence = new SequenceNode("AlertSequence", 1); //priority 1 to be higher the Chasing
-        AlertSequence.AddChild(Alerted);
-        AlertSequence.AddChild(TextSearch);
-        AlertSequence.AddChild(MoveToWeapon);
-        AlertSequence.AddChild(SearchForTarget);
+        Base.AddChild(LookForPlayer);
+        Base.AddChild(Patrolling);
 
-        PriorityNode AlertAndChase = new PriorityNode("AlertAndChase"); //priority 1 to be higher the patroling
-        AlertAndChase.AddChild(ChaseOrTrack);
-        AlertAndChase.AddChild(AlertSequence);
-
-        SequenceNode AlertOrChaseSequence = new SequenceNode("AlertOrChaseSequence", 1);
-        AlertOrChaseSequence.AddChild(AlertTrackChase);
-        AlertOrChaseSequence.AddChild(AlertAndChase);
-
-
-        //adding to the priority list
-        redGuyDefault.AddChild(AlertOrChaseSequence);
-        redGuyDefault.AddChild(parralel);
-
-        tree.AddChild(redGuyDefault);
+        tree.AddChild(Base);
     }
-
 
     private void FixedUpdate()
     {
-        CheckForPlayer();
         CheckForWeapons();
-
-        weaponTextObj.SetActive(HasWeapon);
+        CheckForPlayer();
 
         if (!playerObj.activeSelf)
         {
@@ -156,15 +140,19 @@ public class RedGuy : MonoBehaviour
     {
         if (other.gameObject.GetComponent<WeaponTag>())
         {
-            HasWeapon = true;
+            hasWeapon = true;
+           
+            weaponObj.SetActive(hasWeapon);
+            weaponTextObj.SetActive(hasWeapon);
+            
             other.gameObject.SetActive(false);
         }
     }
 
     private void CheckForWeapons()
     {
-        Debug.Log(IsAlerted);
-        Debug.Log(SeesPlayer);
+        //Debug.Log(IsAlerted);
+        //Debug.Log(SeesPlayer);
         Collider[] colliders = Physics.OverlapSphere(transform.position, minDist);
 
         foreach (Collider collider in colliders)
@@ -180,27 +168,28 @@ public class RedGuy : MonoBehaviour
 
     private void CheckForPlayer()
     {
-        if (Vector3.Distance(transform.position, playerObj.transform.position) > minDist)
-        {
-            SeesPlayer = false;
-            return;
-        }
+        float dist = Vector3.Distance(transform.position, playerObj.transform.position);
+        
 
         RaycastHit hit;
+
         Vector3 dir = playerObj.transform.position - transform.position;
-        if (Physics.Raycast(transform.position, dir, out hit, minDist))
+
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, dir, out hit, minDist))
         {
             SeesPlayer = hit.collider.gameObject == playerObj ? true : false;
 
             Color rayColor = SeesPlayer ? Color.red : Color.yellow;
-            Debug.DrawRay(transform.position, dir, rayColor);
-
-            if (SeesPlayer)
+            Debug.DrawRay(transform.position + Vector3.up * 0.5f, dir, rayColor);
+        
+            if (SeesPlayer) 
+            { 
                 IsAlerted = true;
-
-            lastKnownVector = playerObj.transform.position;
-            lastKnownTrans.position = lastKnownVector;
+                lastKnownVector = playerObj.transform.position;
+                lastKnownTrans.position = lastKnownVector;
+            }
         }
+       
 
     }
 
